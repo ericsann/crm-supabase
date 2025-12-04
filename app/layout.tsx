@@ -50,6 +50,12 @@ export default function RootLayout({
               >
                 Tickets
               </Link>
+              <Link
+                href="/kanban"
+                className="block py-2 px-4 rounded hover:bg-gray-700"
+              >
+                Kanban
+              </Link>
             </nav>
           </aside>
           <main className="flex-1 bg-gray-50">{children}</main>
