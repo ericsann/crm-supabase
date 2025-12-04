@@ -1,0 +1,180 @@
+import { supabase } from '@/lib/supabase';
+import { Tables, TablesInsert, TablesUpdate } from '@/database.types';
+
+type Ticket = Tables<'tickets'>;
+type TicketInsert = TablesInsert<'tickets'>;
+type TicketUpdate = TablesUpdate<'tickets'>;
+
+/**
+ * Serviço para operações CRUD na tabela tickets
+ */
+export class TicketService {
+  /**
+   * Criar um novo ticket
+   */
+  static async create(data: TicketInsert): Promise<Ticket> {
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Erro ao criar ticket: ${error.message}`);
+    }
+
+    return ticket;
+  }
+
+  /**
+   * Buscar todos os tickets
+   */
+  static async getAll(): Promise<Ticket[]> {
+    const { data: tickets, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erro ao buscar tickets: ${error.message}`);
+    }
+
+    return tickets || [];
+  }
+
+  /**
+   * Buscar ticket por ID
+   */
+  static async getById(id: string): Promise<Ticket | null> {
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Ticket não encontrado
+      }
+      throw new Error(`Erro ao buscar ticket: ${error.message}`);
+    }
+
+    return ticket;
+  }
+
+  /**
+   * Buscar tickets por customer_id
+   */
+  static async getByCustomerId(customerId: string): Promise<Ticket[]> {
+    const { data: tickets, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erro ao buscar tickets do cliente: ${error.message}`);
+    }
+
+    return tickets || [];
+  }
+
+  /**
+   * Buscar tickets por kanban_column_id
+   */
+  static async getByKanbanColumnId(columnId: string): Promise<Ticket[]> {
+    const { data: tickets, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('kanban_column_id', columnId)
+      .order('order_in_column', { ascending: true });
+
+    if (error) {
+      throw new Error(`Erro ao buscar tickets da coluna: ${error.message}`);
+    }
+
+    return tickets || [];
+  }
+
+  /**
+   * Buscar tickets por assigned_to
+   */
+  static async getByAssignedTo(assignedTo: string): Promise<Ticket[]> {
+    const { data: tickets, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('assigned_to', assignedTo)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erro ao buscar tickets atribuídos: ${error.message}`);
+    }
+
+    return tickets || [];
+  }
+
+  /**
+   * Buscar tickets com joins (customer e kanban_column)
+   */
+  static async getAllWithRelations(): Promise<
+    (Ticket & {
+      customers?: Tables<'customers'>;
+      kanban_columns?: Tables<'kanban_columns'>;
+    })[]
+  > {
+    const { data: tickets, error } = await supabase
+      .from('tickets')
+      .select(
+        `
+        *,
+        customers:customer_id (
+          id,
+          name,
+          email,
+          phone
+        ),
+        kanban_columns:kanban_column_id (
+          id,
+          name,
+          position
+        )
+      `
+      )
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erro ao buscar tickets com relações: ${error.message}`);
+    }
+
+    return tickets || [];
+  }
+
+  /**
+   * Atualizar ticket
+   */
+  static async update(id: string, data: TicketUpdate): Promise<Ticket> {
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Erro ao atualizar ticket: ${error.message}`);
+    }
+
+    return ticket;
+  }
+
+  /**
+   * Deletar ticket
+   */
+  static async delete(id: string): Promise<void> {
+    const { error } = await supabase.from('tickets').delete().eq('id', id);
+
+    if (error) {
+      throw new Error(`Erro ao deletar ticket: ${error.message}`);
+    }
+  }
+}

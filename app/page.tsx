@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -13,16 +13,24 @@ export default function Home() {
             href="/customers"
             className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           >
-            <h2 className="text-2xl font-semibold text-blue-600 mb-2">Clientes</h2>
-            <p className="text-gray-600">Gerencie seus clientes: adicione, edite e visualize informações.</p>
+            <h2 className="text-2xl font-semibold text-blue-600 mb-2">
+              Clientes
+            </h2>
+            <p className="text-gray-600">
+              Gerencie seus clientes: adicione, edite e visualize informações.
+            </p>
           </Link>
 
           <Link
             href="/tickets"
             className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           >
-            <h2 className="text-2xl font-semibold text-green-600 mb-2">Tickets</h2>
-            <p className="text-gray-600">Gerencie tickets de suporte e acompanhe o atendimento.</p>
+            <h2 className="text-2xl font-semibold text-green-600 mb-2">
+              Tickets
+            </h2>
+            <p className="text-gray-600">
+              Gerencie tickets de suporte e acompanhe o atendimento.
+            </p>
           </Link>
         </div>
 
@@ -33,5 +41,5 @@ export default function Home() {
         </div>
       </div>
     </div>
-  )
+  );
 }

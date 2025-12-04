@@ -1,0 +1,25 @@
+# Arquivos gerados automaticamente
+database.types.ts
+
+# Arquivos de configuração
+.next/
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+
+# Arquivos de build
+dist/
+build/
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
+
+# Arquivos de IDE
+.vscode/
+.idea/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
