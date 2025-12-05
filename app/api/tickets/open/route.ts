@@ -1,4 +1,4 @@
-import { TicketService } from '@/app/services';
+import { TicketService } from '../../../services/ticketService';
 import { createSuccessResponse, withErrorHandler, withRateLimit } from '@/lib/api-utils';
 
 /**

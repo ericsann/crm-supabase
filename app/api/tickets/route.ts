@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { TicketService } from '@/app/services';
+import { TicketService } from '../../services/ticketService';
 import { createTicketSchema, validateData } from '@/lib/validations';
 import { createSuccessResponse, withErrorHandler, withRateLimit } from '@/lib/api-utils';
 
