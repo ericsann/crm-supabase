@@ -56,18 +56,18 @@ export default function KanbanPage() {
       ]);
 
       if (columnsRes.ok) {
-        const columnsData = await columnsRes.json();
-        setColumns(columnsData);
+        const response = await columnsRes.json();
+        setColumns(response.success ? response.data : []);
       }
 
       if (ticketsRes.ok) {
-        const ticketsData = await ticketsRes.json();
-        setTickets(ticketsData);
+        const response = await ticketsRes.json();
+        setTickets(response.success ? response.data : []);
       }
 
       if (customersRes.ok) {
-        const customersData = await customersRes.json();
-        setCustomers(customersData);
+        const response = await customersRes.json();
+        setCustomers(response.success ? response.data : []);
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -161,12 +161,15 @@ export default function KanbanPage() {
       });
 
       if (response.ok) {
-        // Atualizar estado local
-        setTickets(prev => prev.map(ticket =>
-          ticket.id === ticketId
-            ? { ...ticket, kanban_column_id: columnId, order_in_column: newOrder }
-            : ticket
-        ));
+        const responseData = await response.json();
+        if (responseData.success) {
+          // Atualizar estado local
+          setTickets(prev => prev.map(ticket =>
+            ticket.id === ticketId
+              ? { ...ticket, kanban_column_id: columnId, order_in_column: newOrder }
+              : ticket
+          ));
+        }
       }
     } catch (error) {
       console.error('Erro ao mover ticket:', error);
@@ -196,7 +199,7 @@ export default function KanbanPage() {
       }));
 
       // Atualizar no backend
-      await Promise.all(
+      const responses = await Promise.all(
         updates.map(update =>
           fetch(`/api/tickets/${update.id}`, {
             method: 'PATCH',
@@ -210,11 +213,22 @@ export default function KanbanPage() {
         )
       );
 
-      // Atualizar estado local
-      setTickets(prev => prev.map(ticket => {
-        const update = updates.find(u => u.id === ticket.id);
-        return update ? { ...ticket, order_in_column: update.order_in_column } : ticket;
-      }));
+      // Verificar se todas as respostas foram bem-sucedidas
+      const allSuccessful = responses.every(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          return data.success;
+        }
+        return false;
+      });
+
+      if (allSuccessful) {
+        // Atualizar estado local
+        setTickets(prev => prev.map(ticket => {
+          const update = updates.find(u => u.id === ticket.id);
+          return update ? { ...ticket, order_in_column: update.order_in_column } : ticket;
+        }));
+      }
     } catch (error) {
       console.error('Erro ao reordenar ticket:', error);
     }
@@ -231,9 +245,11 @@ export default function KanbanPage() {
       });
 
       if (response.ok) {
-        const newTicket = await response.json();
-        setTickets(prev => [...prev, newTicket]);
-        setShowCreateModal(false);
+        const responseData = await response.json();
+        if (responseData.success && responseData.data) {
+          setTickets(prev => [...prev, responseData.data]);
+          setShowCreateModal(false);
+        }
       }
     } catch (error) {
       console.error('Erro ao criar ticket:', error);

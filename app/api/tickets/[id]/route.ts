@@ -1,52 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { TicketService } from '@/app/services';
+import { updateTicketSchema, moveTicketSchema, validateData } from '@/lib/validations';
+import { createSuccessResponse, withErrorHandler, withRateLimit } from '@/lib/api-utils';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
  * PUT /api/tickets/[id]
  * Atualiza um ticket
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const body = await request.json();
-    const ticket = await TicketService.update(params.id, body);
-    return NextResponse.json(ticket);
-  } catch (error) {
-    console.error('Erro ao atualizar ticket:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
-  }
-}
+const updateTicket = async (request: NextRequest, { params }: RouteParams) => {
+  const body = await request.json();
+  const resolvedParams = await params;
+  const validatedData = validateData(updateTicketSchema, body);
+  const ticket = await TicketService.update(resolvedParams.id, validatedData);
+  return createSuccessResponse(ticket);
+};
 
 /**
  * PATCH /api/tickets/[id]/move
  * Move um ticket para outra coluna e atualiza a ordem
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const body = await request.json();
-    const { kanban_column_id, order_in_column } = body;
+const moveTicket = async (request: NextRequest, { params }: RouteParams) => {
+  const body = await request.json();
+  const resolvedParams = await params;
+  const validatedData = validateData(moveTicketSchema, body);
 
-    const updateData = {
-      kanban_column_id,
-      order_in_column,
-      updated_at: new Date().toISOString()
-    };
+  const updateData = {
+    ...validatedData,
+    updated_at: new Date().toISOString()
+  };
 
-    const ticket = await TicketService.update(params.id, updateData);
-    return NextResponse.json(ticket);
-  } catch (error) {
-    console.error('Erro ao mover ticket:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
-  }
-}
+  const ticket = await TicketService.update(resolvedParams.id, updateData);
+  return createSuccessResponse(ticket);
+};
+
+export const PUT = withRateLimit(withErrorHandler(updateTicket));
+export const PATCH = withRateLimit(withErrorHandler(moveTicket));

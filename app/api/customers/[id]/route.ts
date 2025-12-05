@@ -1,43 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { CustomerService } from '@/app/services';
+import { updateCustomerSchema, validateData } from '@/lib/validations';
+import { createSuccessResponse, withErrorHandler, withRateLimit } from '@/lib/api-utils';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
  * PUT /api/customers/[id]
  * Atualiza um cliente
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const body = await request.json();
-    const customer = await CustomerService.update(params.id, body);
-    return NextResponse.json(customer);
-  } catch (error) {
-    console.error('Erro ao atualizar cliente:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
-  }
-}
+const updateCustomer = async (request: NextRequest, { params }: RouteParams) => {
+  const body = await request.json();
+  const resolvedParams = await params;
+  const validatedData = validateData(updateCustomerSchema, body);
+  const customer = await CustomerService.update(resolvedParams.id, validatedData);
+  return createSuccessResponse(customer);
+};
 
 /**
  * DELETE /api/customers/[id]
  * Deleta um cliente
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    await CustomerService.delete(params.id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Erro ao deletar cliente:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
-  }
-}
+const deleteCustomer = async (request: NextRequest, { params }: RouteParams) => {
+  const resolvedParams = await params;
+  await CustomerService.delete(resolvedParams.id);
+  return createSuccessResponse({ success: true });
+};
+
+export const PUT = withRateLimit(withErrorHandler(updateCustomer));
+export const DELETE = withRateLimit(withErrorHandler(deleteCustomer));

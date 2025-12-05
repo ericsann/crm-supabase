@@ -25,8 +25,8 @@ export default function CustomersPage() {
     try {
       const response = await fetch('/api/customers');
       if (response.ok) {
-        const data = await response.json();
-        setCustomers(data);
+        const responseData = await response.json();
+        setCustomers(responseData.success ? responseData.data : []);
       }
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
@@ -54,13 +54,16 @@ export default function CustomersPage() {
       });
 
       if (response.ok) {
-        const customer = await response.json();
-        if (editingCustomer) {
-          setCustomers(prev => prev.map(c => c.id === customer.id ? customer : c));
-        } else {
-          setCustomers(prev => [...prev, customer]);
+        const responseData = await response.json();
+        if (responseData.success && responseData.data) {
+          const customer = responseData.data;
+          if (editingCustomer) {
+            setCustomers(prev => prev.map(c => c.id === customer.id ? customer : c));
+          } else {
+            setCustomers(prev => [...prev, customer]);
+          }
+          closeModal();
         }
-        closeModal();
       }
     } catch (error) {
       console.error('Erro ao salvar cliente:', error);
@@ -76,7 +79,10 @@ export default function CustomersPage() {
       });
 
       if (response.ok) {
-        setCustomers(prev => prev.filter(c => c.id !== id));
+        const responseData = await response.json();
+        if (responseData.success) {
+          setCustomers(prev => prev.filter(c => c.id !== id));
+        }
       }
     } catch (error) {
       console.error('Erro ao deletar cliente:', error);
