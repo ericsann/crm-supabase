@@ -67,7 +67,7 @@ export function CreateTicketModal({
               required
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               placeholder="Digite o título do ticket"
             />
           </div>
@@ -79,7 +79,7 @@ export function CreateTicketModal({
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               rows={3}
               placeholder="Descrição opcional"
             />
@@ -93,7 +93,7 @@ export function CreateTicketModal({
               required
               value={formData.customer_id}
               onChange={(e) => handleInputChange('customer_id', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               <option value="">Selecione um cliente</option>
               {customers.map((customer) => (
@@ -112,7 +112,7 @@ export function CreateTicketModal({
               required
               value={formData.kanban_column_id}
               onChange={(e) => handleInputChange('kanban_column_id', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               {columns.map((column) => (
                 <option key={column.id} value={column.id}>
@@ -129,7 +129,7 @@ export function CreateTicketModal({
             <select
               value={formData.priority}
               onChange={(e) => handleInputChange('priority', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               <option value="low">Baixa</option>
               <option value="medium">Média</option>
@@ -145,7 +145,7 @@ export function CreateTicketModal({
             <select
               value={formData.category}
               onChange={(e) => handleInputChange('category', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               <option value="technical">Técnica</option>
               <option value="financial">Financeira</option>

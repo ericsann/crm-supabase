@@ -18,6 +18,7 @@ import {
 import { KanbanColumn } from './components/KanbanColumn';
 import { TicketCard } from './components/TicketCard';
 import { CreateTicketModal } from './components/CreateTicketModal';
+import { TicketDetailsModal } from '../tickets/components/TicketDetailsModal';
 import { Tables, Database } from '@/database.types';
 
 type KanbanColumnType = Tables<'kanban_columns'>;
@@ -32,6 +33,7 @@ export default function KanbanPage() {
   const [customers, setCustomers] = useState<Tables<'customers'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTicket, setActiveTicket] = useState<TicketType | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const sensors = useSensors(
@@ -273,6 +275,38 @@ export default function KanbanPage() {
     }
   };
 
+  const handleTicketClick = async (ticket: TicketType) => {
+    try {
+      const response = await fetch(`/api/tickets/${ticket.id}`);
+      if (response.ok) {
+        const responseData = await response.json();
+        if (responseData.success && responseData.data) {
+          setSelectedTicket(responseData.data);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar detalhes do ticket:', error);
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    try {
+      const response = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remover ticket do estado local
+        setTickets(prev => prev.filter(ticket => ticket.id !== ticketId));
+        setSelectedTicket(null);
+      } else {
+        console.error('Erro ao excluir ticket');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir ticket:', error);
+    }
+  };
+
   const handleCreateTicket = async (ticketData: any) => {
     try {
       const response = await fetch('/api/tickets', {
@@ -322,7 +356,7 @@ export default function KanbanPage() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-6 overflow-x-auto pb-6">
+          <div className="grid grid-cols-5 gap-4 pb-6">
             {columns.map((column) => {
               const columnTickets = tickets
                 .filter(ticket => ticket.kanban_column_id === column.id)
@@ -335,7 +369,11 @@ export default function KanbanPage() {
                     strategy={verticalListSortingStrategy}
                   >
                     {columnTickets.map((ticket) => (
-                      <TicketCard key={ticket.id} ticket={ticket} />
+                      <TicketCard
+                        key={ticket.id}
+                        ticket={ticket}
+                        onClick={() => handleTicketClick(ticket)}
+                      />
                     ))}
                   </SortableContext>
                 </KanbanColumn>
@@ -356,6 +394,15 @@ export default function KanbanPage() {
             columns={columns}
             onClose={() => setShowCreateModal(false)}
             onCreate={handleCreateTicket}
+          />
+        )}
+
+        {selectedTicket && (
+          <TicketDetailsModal
+            ticket={selectedTicket}
+            onClose={() => setSelectedTicket(null)}
+            onUpdate={loadData}
+            onDelete={() => handleDeleteTicket(selectedTicket.id)}
           />
         )}
       </div>

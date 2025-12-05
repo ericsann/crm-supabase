@@ -41,6 +41,28 @@ export default function TicketsPage() {
     return ticket.status === filter;
   });
 
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este ticket?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remover ticket do estado local
+        setTickets(prev => prev.filter(ticket => ticket.id !== ticketId));
+        setSelectedTicket(null);
+      } else {
+        console.error('Erro ao excluir ticket');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir ticket:', error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-blue-100 text-blue-800';
@@ -79,7 +101,7 @@ export default function TicketsPage() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               <option value="all">Todos os Status</option>
               <option value="open">Abertos</option>
@@ -179,12 +201,20 @@ export default function TicketsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => setSelectedTicket(ticket)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Ver Detalhes
-                        </button>
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => setSelectedTicket(ticket)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Ver Detalhes
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTicket(ticket.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Excluir
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -210,6 +240,7 @@ export default function TicketsPage() {
             ticket={selectedTicket}
             onClose={() => setSelectedTicket(null)}
             onUpdate={loadTickets}
+            onDelete={() => handleDeleteTicket(selectedTicket.id)}
           />
         )}
       </div>

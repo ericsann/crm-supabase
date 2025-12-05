@@ -17,7 +17,7 @@ export function KanbanColumn({ column, children }: KanbanColumnProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-80 bg-gray-100 rounded-lg p-4 min-h-[600px] ${
+      className={`w-full bg-gray-100 rounded-lg p-2 min-h-[600px] ${
         isOver ? 'bg-blue-50 border-2 border-blue-300' : 'border-2 border-transparent'
       }`}
     >

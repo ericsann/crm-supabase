@@ -10,9 +10,10 @@ type TicketType = Tables<'tickets'> & {
 interface TicketCardProps {
   ticket: TicketType;
   isDragging?: boolean;
+  onClick?: () => void;
 }
 
-export function TicketCard({ ticket, isDragging = false }: TicketCardProps) {
+export function TicketCard({ ticket, isDragging = false, onClick }: TicketCardProps) {
   const {
     attributes,
     listeners,
@@ -42,12 +43,19 @@ export function TicketCard({ ticket, isDragging = false }: TicketCardProps) {
     closed: 'bg-gray-100 text-gray-800',
   };
 
+  const handleClick = () => {
+    if (!isSortableDragging && onClick) {
+      onClick();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
+      onClick={handleClick}
       className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-move hover:shadow-md transition-shadow ${
         isDragging || isSortableDragging ? 'opacity-50 rotate-2' : ''
       }`}

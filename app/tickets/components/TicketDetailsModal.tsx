@@ -12,9 +12,10 @@ interface TicketDetailsModalProps {
   ticket: TicketType;
   onClose: () => void;
   onUpdate: () => void;
+  onDelete?: () => void;
 }
 
-export function TicketDetailsModal({ ticket, onClose, onUpdate }: TicketDetailsModalProps) {
+export function TicketDetailsModal({ ticket, onClose, onUpdate, onDelete }: TicketDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'messages' | 'events'>('details');
 
   const getStatusColor = (status: string) => {
@@ -223,10 +224,22 @@ export function TicketDetailsModal({ ticket, onClose, onUpdate }: TicketDetailsM
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+        <div className="flex justify-between items-center p-6 border-t border-gray-200">
+          {onDelete && (
+            <button
+              onClick={() => {
+                if (window.confirm('Tem certeza que deseja excluir este ticket?')) {
+                  onDelete();
+                }
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium transition-colors"
+            >
+              Excluir Ticket
+            </button>
+          )}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md font-medium transition-colors"
+            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md font-medium transition-colors ml-auto"
           >
             Fechar
           </button>
