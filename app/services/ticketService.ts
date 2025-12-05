@@ -7,6 +7,19 @@ type Ticket = Tables<'tickets'>;
 type TicketInsert = TablesInsert<'tickets'>;
 type TicketUpdate = TablesUpdate<'tickets'>;
 
+// Tipos para queries com joins
+type TicketWithRelations = Ticket & {
+  customers: Pick<Tables<'customers'>, 'id' | 'name' | 'email' | 'phone'> | null;
+  kanban_columns: Pick<Tables<'kanban_columns'>, 'id' | 'name' | 'position'> | null;
+};
+
+type TicketWithFullDetails = Ticket & {
+  customers: Pick<Tables<'customers'>, 'id' | 'name' | 'email' | 'phone'> | null;
+  kanban_columns: Pick<Tables<'kanban_columns'>, 'id' | 'name' | 'position'> | null;
+  ticket_events: Tables<'ticket_events'>[];
+  ticket_messages: Tables<'ticket_messages'>[];
+};
+
 /**
  * Serviço para operações CRUD na tabela tickets
  */
@@ -118,12 +131,7 @@ export class TicketService {
   /**
    * Buscar tickets com joins (customer e kanban_column)
    */
-  static async getAllWithRelations(): Promise<
-    (Ticket & {
-      customers?: Tables<'customers'>;
-      kanban_columns?: Tables<'kanban_columns'>;
-    })[]
-  > {
+  static async getAllWithRelations(): Promise<TicketWithRelations[]> {
     const { data: tickets, error } = await supabase
       .from('tickets')
       .select(
@@ -147,21 +155,14 @@ export class TicketService {
     if (error) {
       throw new Error(`Erro ao buscar tickets com relações: ${error.message}`);
     }
-  //@ts-expect-error
+
     return tickets || [];
   }
 
   /**
    * Buscar tickets abertos com todas as relações (customer, kanban_column, events, messages)
    */
-  static async getOpenTicketsWithFullDetails(): Promise<
-    (Ticket & {
-      customers?: Tables<'customers'>;
-      kanban_columns?: Tables<'kanban_columns'>;
-      ticket_events?: Tables<'ticket_events'>[];
-      ticket_messages?: Tables<'ticket_messages'>[];
-    })[]
-  > {
+  static async getOpenTicketsWithFullDetails(): Promise<TicketWithFullDetails[]> {
     // Primeiro buscar tickets abertos (não fechados)
     const { data: tickets, error: ticketsError } = await supabase
       .from('tickets')
@@ -207,21 +208,14 @@ export class TicketService {
         };
       })
     );
-//@ts-expect-error
+
     return ticketsWithDetails;
   }
 
   /**
    * Buscar ticket específico com todas as relações completas
    */
-  static async getTicketWithFullDetails(id: string): Promise<
-    (Ticket & {
-      customers?: Tables<'customers'>;
-      kanban_columns?: Tables<'kanban_columns'>;
-      ticket_events?: Tables<'ticket_events'>[];
-      ticket_messages?: Tables<'ticket_messages'>[];
-    }) | null
-  > {
+  static async getTicketWithFullDetails(id: string): Promise<TicketWithFullDetails | null> {
     // Buscar ticket com relações básicas
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
@@ -256,7 +250,7 @@ export class TicketService {
       TicketEventService.getByTicketId(ticket.id),
       TicketMessageService.getByTicketId(ticket.id)
     ]);
-//@ts-expect-error
+
     return {
       ...ticket,
       ticket_events: events,
