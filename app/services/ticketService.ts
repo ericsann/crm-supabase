@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { Tables, TablesInsert, TablesUpdate } from '@/database.types';
+import { TicketEventService } from './ticketEventService';
+import { TicketMessageService } from './ticketMessageService';
 
 type Ticket = Tables<'tickets'>;
 type TicketInsert = TablesInsert<'tickets'>;
@@ -147,6 +149,119 @@ export class TicketService {
     }
 
     return tickets || [];
+  }
+
+  /**
+   * Buscar tickets abertos com todas as relações (customer, kanban_column, events, messages)
+   */
+  static async getOpenTicketsWithFullDetails(): Promise<
+    (Ticket & {
+      customers?: Tables<'customers'>;
+      kanban_columns?: Tables<'kanban_columns'>;
+      ticket_events?: Tables<'ticket_events'>[];
+      ticket_messages?: Tables<'ticket_messages'>[];
+    })[]
+  > {
+    // Primeiro buscar tickets abertos (não fechados)
+    const { data: tickets, error: ticketsError } = await supabase
+      .from('tickets')
+      .select(
+        `
+        *,
+        customers:customer_id (
+          id,
+          name,
+          email,
+          phone
+        ),
+        kanban_columns:kanban_column_id (
+          id,
+          name,
+          position
+        )
+      `
+      )
+      .or('status.is.null,status.neq.closed')
+      .order('created_at', { ascending: false });
+
+    if (ticketsError) {
+      throw new Error(`Erro ao buscar tickets abertos: ${ticketsError.message}`);
+    }
+
+    if (!tickets || tickets.length === 0) {
+      return [];
+    }
+
+    // Para cada ticket, buscar events e messages
+    const ticketsWithDetails = await Promise.all(
+      tickets.map(async (ticket) => {
+        const [events, messages] = await Promise.all([
+          TicketEventService.getByTicketId(ticket.id),
+          TicketMessageService.getByTicketId(ticket.id)
+        ]);
+
+        return {
+          ...ticket,
+          ticket_events: events,
+          ticket_messages: messages
+        };
+      })
+    );
+
+    return ticketsWithDetails;
+  }
+
+  /**
+   * Buscar ticket específico com todas as relações completas
+   */
+  static async getTicketWithFullDetails(id: string): Promise<
+    (Ticket & {
+      customers?: Tables<'customers'>;
+      kanban_columns?: Tables<'kanban_columns'>;
+      ticket_events?: Tables<'ticket_events'>[];
+      ticket_messages?: Tables<'ticket_messages'>[];
+    }) | null
+  > {
+    // Buscar ticket com relações básicas
+    const { data: ticket, error: ticketError } = await supabase
+      .from('tickets')
+      .select(
+        `
+        *,
+        customers:customer_id (
+          id,
+          name,
+          email,
+          phone
+        ),
+        kanban_columns:kanban_column_id (
+          id,
+          name,
+          position
+        )
+      `
+      )
+      .eq('id', id)
+      .single();
+
+    if (ticketError) {
+      if (ticketError.code === 'PGRST116') {
+        return null; // Ticket não encontrado
+      }
+      throw new Error(`Erro ao buscar ticket: ${ticketError.message}`);
+    }
+
+    // Buscar events e messages
+    const [events, messages] = await Promise.all([
+      TicketEventService.getByTicketId(ticket.id),
+      TicketMessageService.getByTicketId(ticket.id)
+    ]);
+
+    return {
+      ...ticket,
+      ticket_events: events,
+      ticket_messages: messages
+    };
   }
 
   /**

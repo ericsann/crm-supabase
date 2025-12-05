@@ -35,6 +35,7 @@ export const updateTicketSchema = createTicketSchema.partial();
 export const moveTicketSchema = z.object({
   kanban_column_id: z.string().uuid('ID da coluna inválido'),
   order_in_column: z.number().int().min(0, 'Ordem deve ser positiva'),
+  status: z.enum(['open', 'in_progress', 'waiting_customer', 'resolved', 'closed']).optional(),
 });
 
 // Schema para criação de coluna kanban

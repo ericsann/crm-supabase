@@ -18,7 +18,7 @@ import {
 import { KanbanColumn } from './components/KanbanColumn';
 import { TicketCard } from './components/TicketCard';
 import { CreateTicketModal } from './components/CreateTicketModal';
-import { Tables } from '@/database.types';
+import { Tables, Database } from '@/database.types';
 
 type KanbanColumnType = Tables<'kanban_columns'>;
 type TicketType = Tables<'tickets'> & {
@@ -83,27 +83,7 @@ export default function KanbanPage() {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-
-    // Encontrar o ticket sendo arrastado
-    const activeTicket = tickets.find(ticket => ticket.id === activeId);
-    if (!activeTicket) return;
-
-    // Verificar se está sobre uma coluna (não um ticket)
-    const targetColumn = columns.find(col => col.id === overId);
-    if (targetColumn && activeTicket.kanban_column_id !== targetColumn.id) {
-      // Mover para nova coluna
-      setTickets(prev => prev.map(ticket =>
-        ticket.id === activeId
-          ? { ...ticket, kanban_column_id: targetColumn.id }
-          : ticket
-      ));
-    }
+    // Não atualizar estado aqui - será feito no handleDragEnd após confirmação da API
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -145,34 +125,88 @@ export default function KanbanPage() {
 
   const moveTicketToColumn = async (ticketId: string, columnId: string) => {
     try {
+      console.log('🚀 Iniciando movimento do ticket:', ticketId, 'para coluna:', columnId);
+
       // Calcular nova ordem na coluna (última posição)
       const ticketsInColumn = tickets.filter(t => t.kanban_column_id === columnId && t.id !== ticketId);
       const newOrder = ticketsInColumn.length;
+      console.log('📊 Nova ordem calculada:', newOrder);
+
+      // Encontrar a coluna para determinar o status
+      const targetColumn = columns.find(col => col.id === columnId);
+      if (!targetColumn) {
+        console.error('❌ Coluna não encontrada:', columnId);
+        return;
+      }
+
+      // Mapear nome da coluna para status
+      const getStatusFromColumnName = (columnName: string): string => {
+        const name = columnName.toLowerCase();
+        if (name.includes('fazer') || name.includes('todo') || name.includes('aberto') || name.includes('aberta')) {
+          return 'open';
+        }
+        if (name.includes('andamento') || name.includes('doing') || name.includes('progress') || name.includes('em andamento')) {
+          return 'in_progress';
+        }
+        if (name.includes('cliente') || name.includes('waiting') || name.includes('aguardando') || name.includes('aguardando cliente')) {
+          return 'waiting_customer';
+        }
+        if (name.includes('concluído') || name.includes('concluída') || name.includes('done') || name.includes('closed') || name.includes('fechado') || name.includes('fechada')) {
+          return 'closed';
+        }
+        if (name.includes('resolvido') || name.includes('resolvida') || name.includes('resolved')) {
+          return 'resolved';
+        }
+        return 'open'; // fallback
+      };
+
+      const newStatus = getStatusFromColumnName(targetColumn.name) as Database['public']['Enums']['status'];
+      console.log('🏷️ Status mapeado:', newStatus, 'para coluna:', targetColumn.name);
+
+      const requestData = {
+        kanban_column_id: columnId,
+        order_in_column: newOrder,
+        status: newStatus,
+      };
+      console.log('📤 Enviando dados para API:', requestData);
 
       const response = await fetch(`/api/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          kanban_column_id: columnId,
-          order_in_column: newOrder,
-        }),
+        body: JSON.stringify(requestData),
       });
+
+      console.log('📥 Resposta da API - Status:', response.status, 'OK:', response.ok);
 
       if (response.ok) {
         const responseData = await response.json();
+        console.log('📦 Dados da resposta:', responseData);
+
         if (responseData.success) {
+          console.log('✅ Atualizando estado local');
           // Atualizar estado local
           setTickets(prev => prev.map(ticket =>
             ticket.id === ticketId
-              ? { ...ticket, kanban_column_id: columnId, order_in_column: newOrder }
+              ? {
+                  ...ticket,
+                  kanban_column_id: columnId,
+                  order_in_column: newOrder,
+                  status: newStatus
+                }
               : ticket
           ));
+          console.log('🎉 Estado local atualizado com sucesso');
+        } else {
+          console.error('❌ API retornou success: false');
         }
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Erro na resposta da API:', errorText);
       }
     } catch (error) {
-      console.error('Erro ao mover ticket:', error);
+      console.error('💥 Erro ao mover ticket:', error);
     }
   };
 
@@ -214,13 +248,16 @@ export default function KanbanPage() {
       );
 
       // Verificar se todas as respostas foram bem-sucedidas
-      const allSuccessful = responses.every(async (res) => {
-        if (res.ok) {
-          const data = await res.json();
-          return data.success;
-        }
-        return false;
-      });
+      const results = await Promise.all(
+        responses.map(async (res) => {
+          if (res.ok) {
+            const data = await res.json();
+            return data.success;
+          }
+          return false;
+        })
+      );
+      const allSuccessful = results.every(r => r);
 
       if (allSuccessful) {
         // Atualizar estado local
@@ -228,6 +265,8 @@ export default function KanbanPage() {
           const update = updates.find(u => u.id === ticket.id);
           return update ? { ...ticket, order_in_column: update.order_in_column } : ticket;
         }));
+      } else {
+        console.error('❌ Falha ao reordenar tickets no backend');
       }
     } catch (error) {
       console.error('Erro ao reordenar ticket:', error);
